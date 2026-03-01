@@ -1,0 +1,57 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+
+struct content {
+  uint8_t joyX1;
+  uint8_t joyY1;
+  uint8_t joyX2;
+  uint8_t joyY2;
+  uint8_t XG;
+  uint8_t YG;
+};
+
+content data;
+
+uint8_t receiverMAC[] = {0xD8, 0xBF, 0xC0, 0x0F, 0xDA, 0xC5};// reciver mac addres of new module of mine
+
+void onDataSent(uint8_t *mac_addr, uint8_t sendStatus) {
+  if (sendStatus == 0) {
+    Serial.println("ESP-NOW: Data Sent OK");
+  } else {
+    Serial.println("ESP-NOW: Send Failed");
+  }
+}
+
+void setup() {
+  Serial.begin(9600);   // MUST match Arduino baud rate
+
+  // WiFi in STA mode
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  // ESP-NOW init
+  if (esp_now_init() != 0) {
+    Serial.println("ESP-NOW init failed");
+    return;
+  }
+
+  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
+  esp_now_register_send_cb(onDataSent);
+
+  // Register receiver
+  esp_now_add_peer(receiverMAC, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+
+  Serial.println("NodeMCU Bridge Ready");
+}
+
+void loop() {
+
+  // Wait until full struct is received from Arduino
+  if (Serial.available() >= sizeof(data)) {
+
+    Serial.readBytes((uint8_t*)&data, sizeof(data));
+
+    // Send data using ESP
+    esp_now_send(receiverMAC, (uint8_t*)&data, sizeof(data));
+  }
+}
