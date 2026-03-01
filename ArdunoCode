@@ -1,0 +1,117 @@
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+// defing the pin for joystic value
+#define X1 A0 
+#define Y1 A1
+#define X2 A2
+#define Y2 A3
+
+// Calibration of Joystick
+int minX1 = 325; int maxX1 = 900; // Value for Joystic 1 on right side at pin number A0 and A1
+int minY1 = 416; int maxY1 = 820;
+
+int minX2 = 325; int maxX2 = 900; // value for Joystic 2 left side at pin A2 and A3
+int minY2 = 416; int maxY2 = 820;
+
+//Joystic variable
+int X1axis = 0;
+int Y1axis = 0;
+
+int X2axis = 0;
+int Y2axis = 0;
+
+//MPU 6050
+Adafruit_MPU6050 mpu;
+//Mpu variables
+int Xgyro = 0;
+int Ygyro = 0;
+
+
+//                               Structure
+struct content{
+  uint8_t joyX1;
+  uint8_t joyY1;
+  uint8_t joyX2;
+  uint8_t joyY2;
+  uint8_t XG;
+  uint8_t YG;
+};
+
+content data;
+void setup() {
+  Serial.begin(9600);
+  Wire.begin();
+  mpu.begin();
+
+  pinMode(X1,INPUT);
+  pinMode(Y1,INPUT);
+  pinMode(X2,INPUT);
+  pinMode(Y2,INPUT);
+}
+
+void loop() {
+  //                                                         MPU code Start
+  sensors_event_t a, g, t;
+  mpu.getEvent(&a, &g, &t);
+
+  Xgyro = map(a.acceleration.x * 100, -980, 980, 0, 10);
+  Ygyro = map(a.acceleration.y*100,-980,980,0,10);
+  Xgyro = constrain(Xgyro, 0, 10);
+  Ygyro = constrain(Ygyro,0,10);
+
+  /*Serial.print(valuex);
+  Serial.print(" ");
+  Serial.println(valuey);
+  delay(200); 
+  */
+  //                                                         MPU code Finish
+
+  //                                                    JoyStick Analog code Start
+
+  X1axis = analogRead(X1);//
+  Y1axis = analogRead(Y1);//
+  X2axis = analogRead(X2);//               Reading the analog value
+  Y2axis = analogRead(Y2);//
+
+  X1axis = map(X1axis,minX1,maxX1,0,10);//
+  Y1axis = map(Y1axis,minY1,maxY1,0,10);//   Maping that to sacle 0 to 10
+  X2axis = map(X2axis,minX2,maxX2,0,10);//
+  Y2axis = map(Y2axis,minY2,maxY2,0,10);//
+
+  X1axis = constrain(X1axis,0,10);//
+  Y1axis = constrain(Y1axis,0,10);//      This will set the limit for the value if maop value
+  X2axis = constrain(X2axis,0,10);//          exeed to 12 it will output 10 and if its fall below 
+  Y2axis = constrain(Y2axis,0,10);//       0 or -1 it will output 0 by defoult
+
+  //Serial.print("X1axis = ");Serial.print(X1axis); Serial.print(" Y1axis = "); Serial.print(Y1axis); Serial.print("  X2axis = ");Serial.print(X2axis); Serial.print(" Y2axis = "); Serial.print(Y2axis); Serial.print("          ");
+  //Serial.print("Xgyro = ");Serial.print(Xgyro);Serial.print("  Ygyro = ");Serial.println(Ygyro);
+
+  //                                                  JoyStick Analog code END
+  
+  //    packing the data to trasmit
+  data.joyX1 = X1axis;
+  data.joyX2 = X2axis;
+  data.joyY1 = Y1axis;
+  data.joyY2 = Y2axis;
+  data.XG = Xgyro;
+  data.YG = Ygyro;
+  
+  //   Transmittint data to nodeMCU
+  Serial.write((uint8_t*)&data, sizeof(data));
+  delay(100);
+
+}
+
+// i have varialbe 
+/*
+Xgyro
+Ygyro
+
+X1axis
+Y1axis
+X2axis
+Y2axis
+
+*/
