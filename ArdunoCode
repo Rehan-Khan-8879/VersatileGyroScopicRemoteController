@@ -92,8 +92,8 @@ void loop() {
   
   //    packing the data to trasmit
   data.joyX1 = X1axis;
-  data.joyX2 = X2axis;
   data.joyY1 = Y1axis;
+  data.joyX2 = X2axis;
   data.joyY2 = Y2axis;
   data.XG = Xgyro;
   data.YG = Ygyro;
