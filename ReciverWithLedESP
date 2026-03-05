@@ -1,0 +1,92 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+
+// -------- LED PINS --------
+#define LED_RIGHT D1
+#define LED_LEFT  D2
+#define LED_FRONT D3
+#define LED_BACK  D4
+
+// -------- SAME STRUCT AS SENDER --------
+struct content {
+  uint8_t joyX1;
+  uint8_t joyY1;
+  uint8_t joyX2;
+  uint8_t joyY2;
+  uint8_t XG;
+  uint8_t YG;
+};
+
+content receivedData;
+
+// -------- RECEIVE CALLBACK --------
+void onDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len) {
+
+  if (len == sizeof(receivedData)) {
+
+    memcpy(&receivedData, incomingData, sizeof(receivedData));
+
+    // -------- SERIAL OUTPUT (FOR PYTHON) --------
+    Serial.print(receivedData.joyX1); Serial.print(",");
+    Serial.print(receivedData.joyY1); Serial.print(",");
+    Serial.print(receivedData.joyX2); Serial.print(",");
+    Serial.print(receivedData.joyY2); Serial.print(",");
+    Serial.print(receivedData.XG); Serial.print(",");
+    Serial.println(receivedData.YG);
+
+    // -------- LED CONTROL USING GYRO --------
+
+    // RIGHT
+    if (receivedData.XG > 6)
+      digitalWrite(LED_RIGHT, HIGH);
+    else
+      digitalWrite(LED_RIGHT, LOW);
+
+    // LEFT
+    if (receivedData.XG < 4)
+      digitalWrite(LED_LEFT, HIGH);
+    else
+      digitalWrite(LED_LEFT, LOW);
+
+    // FRONT
+    if (receivedData.YG > 6)
+      digitalWrite(LED_FRONT, HIGH);
+    else
+      digitalWrite(LED_FRONT, LOW);
+
+    // BACK
+    if (receivedData.YG < 4)
+      digitalWrite(LED_BACK, HIGH);
+    else
+      digitalWrite(LED_BACK, LOW);
+  }
+}
+
+void setup() {
+
+  Serial.begin(9600);
+
+  // LED pins
+  pinMode(LED_RIGHT, OUTPUT);
+  pinMode(LED_LEFT, OUTPUT);
+  pinMode(LED_FRONT, OUTPUT);
+  pinMode(LED_BACK, OUTPUT);
+
+  // WiFi
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  // ESP-NOW
+  if (esp_now_init() != 0) {
+    Serial.println("ESP-NOW Init Failed");
+    return;
+  }
+
+  esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+  esp_now_register_recv_cb(onDataRecv);
+
+  Serial.println("ESP-NOW Receiver Ready");
+}
+
+void loop() {
+}
